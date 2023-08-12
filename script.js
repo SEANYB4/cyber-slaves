@@ -15,15 +15,20 @@ class Enemy {
         this.y = this.canvas.height-90;
         this.image = this.game.enemyImageIdle;
         this.attacking = false;
+        this.health = 100;
+        this.frameCount = 5;
+        this.currentFrame = 0;
+        this.frameOffset = 1;
+        this.frameCap = 5;
+        this.xVel = -2;
+        this.direction = 'left';
     }
 
     draw() {
         
-        
-
         this.context.drawImage(
             this.image,
-            this.game.currentPlayerFrame * this.game.playerFrameWidth,
+            this.currentFrame * this.game.playerFrameWidth,
             0, 
             this.game.spriteWidth,
             this.game.spriteHeight, 
@@ -42,28 +47,37 @@ class Enemy {
         if (Math.random()*100 > 99) {
             this.attacking = true;
             console.log('Enemy attacking');
+            this.game.attacks.push(new Blast(this.canvas, this.context, this.game, this.direction, this.x, this.y))
         }
 
+        if (this.currentFrame > this.frameCap) {
+            this.currentFrame = 0;
+        }
 
+        if (this.frameOffset > 7) {
+            this.frameOffset = 1;
+            this.currentFrame += 1;
+        }
 
-        this.x -= 2;
+        this.frameOffset += 1;
+        this.x += this.xVel;
 
         if (this.x < 0) {
             this.game.enemies.pop();
+        } else if (this.health <= 0) {
+            this.game.enemies.pop()
         }
-
     }
-
 }
 
 class Blast {
 
-    constructor(canvas, context, game, direction) {
+    constructor(canvas, context, game, direction, x, y) {
         this.canvas = canvas;
         this.context = context;
         this.game = game;
-        this.x = this.game.playerX + 12;
-        this.y = this.game.playerY + 12;
+        this.x = x - 20;
+        this.y = y;
         this.image = this.game.blastImage;
         this.direction = direction;
     }
@@ -74,6 +88,7 @@ class Blast {
             this.x -= 5;
         } else {
             this.x += 5;
+            
         }
         
         if (this.x > this.canvas.width || this.x < 0) {
@@ -83,21 +98,14 @@ class Blast {
     }
 
     draw() {
-        
         // this.context.fillStyle = 'red';
         // this.context.fillRect(this.x, this.y, 50, 50);
-
         this.context.drawImage(
             this.image,
             this.x,
             this.y
-        )
-        
-            
-        
+        )   
     }
-
-    
 }
 
 
@@ -119,7 +127,7 @@ class Game {
         this.attacks = [];
         this.enemies = [];
         this.frameCount = 5;
-
+        this.playerHealth = 100;
         
         // PLayer Images
        
@@ -151,11 +159,18 @@ class Game {
         this.currentPlayerFrame = 1;
         this.frameOffset = 1;
 
+        // Dead
+        this.playerImageDead = new Image();
+        this.playerImageDead.src = './Infantryman/Dead.png'
 
         // Enemy Images
 
         this.enemyImageIdle = new Image();
         this.enemyImageIdle.src = './Destroyer/WalkLeft.png';
+
+        // Enemy Hurt
+        this.enemyImageHurt = new Image();
+        this.enemyImageHurt.src = './Destroyer/HurtLeft.png';
 
         // Directionality
         this.direction = 'right';
@@ -204,7 +219,7 @@ class Game {
                     this.playerImage = this.playerImageJump;
                 }
             } else if (event.key === 'w') {
-                this.attacks.push(new Blast(this.canvas, this.context, this, this.blastImage, this.direction))
+                this.attacks.push(new Blast(this.canvas, this.context, this, this.direction, this.playerX, this.playerY))
                 
                 if(this.direction == 'left') {
                     this.playerImage = this.playerImageShotLeft;
@@ -274,6 +289,9 @@ class Game {
             }
         }
 
+
+       
+
         // Clear canvas
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -336,6 +354,43 @@ class Game {
             let enemy = this.enemies[i];
             enemy.update();
             enemy.draw();
+        }
+
+
+         // Check for blast collision
+         for (let i = 0; i < this.attacks.length; i++){
+
+            let attack = this.attacks[i];
+
+            for (let j = 0; j < this.enemies.length; j++) {
+                let enemy = this.enemies[j];
+                if (   attack.x <= enemy.x + 15
+                    && attack.x >= enemy.x - 15
+                    && attack.y >= enemy.y - 15
+                    && attack.y <= enemy.y + 15
+                    ) {
+                        console.log('Enemy hit')
+                        enemy.image = this.enemyImageHurt;
+                        enemy.frameCount = 1;
+                        enemy.frameCap = 2;
+                        enemy.xVel = 0;
+                        this.attacks.pop();
+                        enemy.health -= 20;
+                    } else if (
+                        attack.x <= this.playerX + 15
+                    && attack.x >= this.playerX - 15
+                    && attack.y >= this.playerY - 15
+                    && attack.y <= this.playerY + 15
+                    ) {
+                        console.log('PLayer hit')
+                        this.playerHealth -= 20;
+                        if (this.playerHealth <= 0) {
+                            // this.playerImage = this.playerImageDead;
+                        }
+                    }
+
+            }
+            
         }
 
         // Schedule next frame update

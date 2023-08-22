@@ -1,4 +1,22 @@
 * {
+    color: lightgreen;
+    background-color: black;
+    font-family: monospace;
+}
 
-    background-color: beige;
+.container {
+
+    display: flex;
+    flex-direction: row;
+    padding: 20px;
+}
+
+canvas {
+    padding: 20px;
+}
+
+.controls {
+
+    border: 1px solid lightgreen;
+    padding: 10px;
 }

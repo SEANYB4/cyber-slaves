@@ -4,6 +4,7 @@ const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 600;
 
+
 class Enemy {
     
     constructor(canvas, context, game) {
@@ -13,7 +14,10 @@ class Enemy {
         this.game = game;
         this.x = this.canvas.width;
         this.y = this.canvas.height-90;
-        this.image = this.game.enemyImageIdle;
+        this.image = this.game.enemy1ImageWalkLeft;
+        this.imageIdle = this.game.enemy1ImageIdle;
+        this.imageWalk = this.game.enemy1ImageWalkLeft;
+        this.imageHurt = this.game.enemy1ImageHurt;
         this.attacking = false;
         this.health = 100;
         this.frameCount = 5;
@@ -22,20 +26,24 @@ class Enemy {
         this.frameCap = 5;
         this.xVel = -2;
         this.direction = 'left';
+        this.attackCount = 0;
+        this.spriteWidth = 128;
+        this.spriteHeight = 72;
+        this.frameWidth = 128;
     }
 
     draw() {
         
         this.context.drawImage(
             this.image,
-            this.currentFrame * this.game.playerFrameWidth,
+            this.currentFrame * this.frameWidth,
             0, 
-            this.game.spriteWidth,
-            this.game.spriteHeight, 
+            this.spriteWidth,
+            this.spriteHeight, 
             this.x, 
             this.y,
-            this.game.spriteWidth,
-            this.game.spriteHeight
+            this.spriteWidth,
+            this.spriteHeight
 
         )
     }
@@ -46,11 +54,26 @@ class Enemy {
         // Attack
         if (Math.random()*100 > 99) {
             this.attacking = true;
+            this.image = this.imageIdle;
+            this.frameCount = 4;
+            this.attackCount = 0;
             console.log('Enemy attacking');
-            this.game.attacks.push(new Blast(this.canvas, this.context, this.game, this.direction, this.x, this.y))
+            this.game.attacks.push(new Blast(this.canvas, this.context, this.game, this.direction, this.x - 20, this.y + 20))
+            this.xVel = 0;
         }
 
-        if (this.currentFrame > this.frameCap) {
+        if (this.attacking) {
+            this.attackCount += 1;
+            if (this.attackCount >= 50) {
+                this.attacking = false;
+                this.image = this.imageWalk;
+                this.frameCount = 5;
+                this.xVel = -2;
+            }
+        }
+
+            
+        if (this.currentFrame >= this.frameCount) {
             this.currentFrame = 0;
         }
 
@@ -70,6 +93,35 @@ class Enemy {
     }
 }
 
+
+class Enemy2 extends Enemy {
+
+    constructor(canvas, context, game) {
+        super(canvas, context, game);
+        this.image = this.game.enemy2ImageWalk;
+        this.y = this.canvas.height-90;
+        this.frameCount = 3;
+        this.imageIdle = this.game.enemy2ImageIdle;
+        this.imageWalk = this.game.enemy2ImageWalk;
+        this.imageHurt = this.game.enemy2ImageHurtLeft;
+    }
+}
+
+
+class Raider extends Enemy {
+
+    constructor(canvas, context, game) {
+        super(canvas, context, game)
+        this.image = this.game.raiderImageWalkLeft;
+        this.frameCount = 7;
+        this.y = this.canvas.height-90;
+    }
+
+
+}
+
+
+
 class Blast {
 
     constructor(canvas, context, game, direction, x, y) {
@@ -78,16 +130,16 @@ class Blast {
         this.game = game;
         this.x = x - 20;
         this.y = y;
-        this.image = this.game.blastImage;
+        this.image = this.game.attackImage1;
         this.direction = direction;
     }
 
     update() {
 
         if (this.direction == 'left') {
-            this.x -= 5;
+            this.x -= 10;
         } else {
-            this.x += 5;
+            this.x += 10;
             
         }
         
@@ -107,6 +159,21 @@ class Blast {
         )   
     }
 }
+
+class Charge extends Blast{
+
+    constructor(canvas, context, game, direction, x, y) {
+        super(canvas, context, game, direction, x, y)
+        this.canvas = canvas;
+        this.context = context;
+        this.game = game;
+        this.x = x - 20;
+        this.y = y;
+        this.image = this.game.attackImage2;
+        this.direction = direction;
+    }
+}
+
 
 
 
@@ -128,6 +195,10 @@ class Game {
         this.enemies = [];
         this.frameCount = 5;
         this.playerHealth = 100;
+        this.playerDead = false;
+        this.playerShield = false;
+        this.playerMeleeAttack = false;
+        this.playerHurt = false;
         
         // PLayer Images
        
@@ -154,34 +225,104 @@ class Game {
         this.playerImageShotLeft = new Image();
         this.playerImageShotLeft.src = './Infantryman/Shot_1Left.png';
 
+        this.playerImageShot2 = new Image();
+        this.playerImageShot2.src = './Infantryman/Shot_2.png';
+
+        this.playerImageShot2Left = new Image();
+        this.playerImageShot2Left.src = './Infantryman/Shot_2Left.png';
+
+        // Attack
+
+        this.playerImageAttack = new Image();
+        this.playerImageAttack.src = './Infantryman/Attack_1.png';
+
+        this.playerImageAttackLeft = new Image();
+        this.playerImageAttackLeft.src = './Infantryman/Attack_1Left.png';
+
+
         this.playerImage = this.playerImageIdle;
         this.playerFrameWidth = 128;
         this.currentPlayerFrame = 1;
         this.frameOffset = 1;
 
+
+        // Hurt
+
+        this.playerImageHurt = new Image();
+        this.playerImageHurt.src = './Infantryman/Hurt.png';
+
         // Dead
         this.playerImageDead = new Image();
         this.playerImageDead.src = './Infantryman/Dead.png'
+        this.playerImageDeadLeft = new Image();
+        this.playerImageDeadLeft.src = './Infantryman/DeadLeft.png';
 
-        // Enemy Images
 
-        this.enemyImageIdle = new Image();
-        this.enemyImageIdle.src = './Destroyer/WalkLeft.png';
+        
+
+        // ENEMY IMAGES
+
+        // DESTROYER
+        // Idle
+        this.enemy1ImageIdle = new Image();
+        this.enemy1ImageIdle.src = './Destroyer/IdleLeft.png';
+
+        this.enemy1ImageWalkLeft = new Image();
+        this.enemy1ImageWalkLeft.src = './Destroyer/WalkLeft.png';
+
 
         // Enemy Hurt
-        this.enemyImageHurt = new Image();
-        this.enemyImageHurt.src = './Destroyer/HurtLeft.png';
+        this.enemy1ImageHurt = new Image();
+        this.enemy1ImageHurt.src = './Destroyer/HurtLeft.png';
 
         // Directionality
         this.direction = 'right';
         
+        // SWORDSMAN
+        this.enemy2ImageIdle = new Image();
+        this.enemy2ImageIdle.src = './Swordsman/Idle.png';
 
-        // Attack Images
+        this.enemy2ImageWalk = new Image();
+        this.enemy2ImageWalk.src = './Swordsman/Pick_UpLeft.png';
+
+
+        this.enemy2ImageHurt = new Image();
+        this.enemy2ImageHurt.src = './Swordsman/Hurt.png';
+
+        this.enemy2ImageHurtLeft = new Image();
+        this.enemy2ImageHurtLeft.src = './Swordsman/HurtLeft.png';
+
+
+
+
+        // RAIDER
+
+        this.raiderImageWalk = new Image();
+        this.raiderImageWalk.src = './Raider_1/Walk.png';
+
+        this.raiderImageWalkLeft = new Image();
+        this.raiderImageWalkLeft.src = './Raider_1/WalkLeft.png';
+
+        // ATTACK IMAGES
 
         // Blast
         this.blastImage = new Image();
         this.blastImage.src = './5 Bullets/9.png';
 
+
+        // ATTACK IMAGE
+        this.attackImage1 = new Image();
+        this.attackImage1.src = './Infantryman/Charge_1-1.png';
+
+        this.attackImage1Left = new Image();
+        this.attackImage1Left.src = './Infantryman/Charge_1-1Left.png';
+
+
+        this.attackImage2 = new Image();
+        this.attackImage2.src = './Infantryman/Charge_2.png';
+
+        this.attackImage2Left = new Image();
+        this.attackImage2Left.src = './Infantryman/Charge_2Left.png';
 
         // Platform Positions
 
@@ -200,17 +341,17 @@ class Game {
 
         // Event Handling
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowLeft') {
+            if (event.key === 'ArrowLeft' && !this.playerDead) {
                 this.direction = 'left';
                 this.playerVelX = -5;
                 this.playerImage = this.playerImageMoveLeft;
                
-            } else if (event.key === 'ArrowRight') {
+            } else if (event.key === 'ArrowRight' && !this.playerDead) {
                 this.direction = 'right';
                 this.playerVelX = 5;
                 this.playerImage = this.playerImageMoveRight;
   
-            } else if (event.key === 'ArrowUp' && !this.isJumping) {
+            } else if (event.key === 'ArrowUp' && !this.isJumping && !this.playerDead) {
                 this.playerVelY = -12;
                 this.isJumping = true;
                 if (this.direction == 'left') {
@@ -218,24 +359,65 @@ class Game {
                 } else {
                     this.playerImage = this.playerImageJump;
                 }
-            } else if (event.key === 'w') {
-                this.attacks.push(new Blast(this.canvas, this.context, this, this.direction, this.playerX, this.playerY))
+            } else if (event.key === 'ArrowDown' && !this.playerShield) {
+                this.playerShield = true;
+
+            }
+            
+            else if (event.key === 'w' && !this.playerDead) {
+                
                 
                 if(this.direction == 'left') {
                     this.playerImage = this.playerImageShotLeft;
+                    this.attacks.push(new Blast(this.canvas, this.context, this, this.direction, this.playerX - 20, this.playerY + 20))
                 } else {
                     this.playerImage = this.playerImageShot;
+                    this.attacks.push(new Blast(this.canvas, this.context, this, this.direction, this.playerX + 70, this.playerY + 20))
                 }
                 
                 this.attacking = true;
                 this.currentPlayerFrame = 0;
                 this.frameCount = 11;
+
+            } else if (event.key === 'e' && !this.playerDead) {
+                
+
+                if(this.direction == 'left') {
+                    this.playerImage = this.playerImageShot2Left;
+                    this.attacks.push(new Charge(this.canvas, this.context, this, this.direction, this.playerX - 20, this.playerY + 20))
+                    
+                } else {
+                    this.playerImage = this.playerImageShot2;
+                    this.attacks.push(new Charge(this.canvas, this.context, this, this.direction, this.playerX + 70, this.playerY + 20))
+                }
+                
+                this.attacking = true;
+                this.currentPlayerFrame = 0;
+                this.frameCount = 4;
+
+            } else if (event.key === 'q' && !this.playerDead) {
+                
+
+                if(this.direction == 'left') {
+                    this.playerImage = this.playerImageAttackLeft;
+                    this.frameCount = 16;
+                    
+                    
+                } else {
+                    this.playerImage = this.playerImageAttack;
+                    this.frameCount = 16;
+                }
+                
+                this.playerMeleeAttack = true;
+                this.currentPlayerFrame = 0;
+                
+
             }
         });
 
         document.addEventListener('keyup', (event) => {
 
-            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && (!this.playerDead)) {
                 this.playerVelX = 0;
                 if (this.direction == 'left') {
                     this.playerImage = this.playerImageIdleLeft;
@@ -246,7 +428,16 @@ class Game {
                 } 
                 
             } else if (event.key === 'w') {
+
                 this.frameCount = 5;
+
+            } else if (event.key === 'ArrowDown') {
+
+                this.playerShield = false;
+                this.frameCount = 5;
+            } else if (event.key === 'q') {
+
+                
             }
         });
 
@@ -256,13 +447,13 @@ class Game {
 
     update() {
 
-        // attack logic
-         
-
+        
         // Update player position
-        this.playerX += this.playerVelX;
-        this.playerY += this.playerVelY;
-
+        if (!this.playerDead) {
+            this.playerX += this.playerVelX;
+            this.playerY += this.playerVelY;
+        }
+        
         // Apply gravity
         this.playerVelY += 0.5;
 
@@ -315,25 +506,68 @@ class Game {
 
         if (this.frameOffset > 7) {
             this.frameOffset = 1;
+
+            
             this.currentPlayerFrame += 1;
+            
         }
         this.frameOffset += 1;
         
         if (this.currentPlayerFrame > this.frameCount) {
+            
+            
+            // Ensure only one attack image cycle
             if (this.attacking) {
                 this.attacking = false;
+                // After one attack image cycle ends, switch back to idle
                 if (this.direction == 'left') {
                     this.playerImage = this.playerImageIdleLeft;
                 } else {
                     this.playerImage = this.playerImageIdle;
                 }
                 
+            } else if (this.playerMeleeAttack) {
+                this.playerMeleeAttack = false;
+                this.frameCount = 5;
+                if (this.direction == 'left') {
+                    this.playerImage = this.playerImageIdleLeft;
+                } else {
+                    this.playerImage = this.playerImageIdle;
+                }
+            } else if (this.playerHurt) {
+
+                this.playerHurt = false;
+                this.frameCount = 5;
+                if (this.direction == 'left') {
+                    this.playerImage = this.playerImageIdleLeft;
+                } else {
+                    this.playerImage = this.playerImageIdle;
+                }
             }
-            this.currentPlayerFrame = 0;
+            
+            if (!this.playerDead) {
+
+                this.currentPlayerFrame = 0;
+            } else {
+                
+                this.currentPlayerFrame = 5
+            }
         }
 
+
+
+        // DRAW SHIELD
+
+        if (this.playerShield) {
+            this.context.strokeStyle = "white";
+            this.context.beginPath();
+            this.context.arc((this.playerX + 20), (this.playerY + 30), 75, 0, (2*Math.PI));
+            this.context.stroke();
+        }
+
+
         
-        // Draw attacks
+        // DRAW ATTACKS
         for (let i=0; i < this.attacks.length; i++) {
             let attack = this.attacks[i];
             attack.update();
@@ -344,8 +578,16 @@ class Game {
 
         // ENEMIES
         if (this.enemies.length <= 0) {
-
-            this.enemies.push(new Enemy(this.canvas, this.context, this))
+            let roll = Math.random()*10
+            if(roll > 8) {
+                this.enemies.push(new Enemy2(this.canvas, this.context, this))
+            } else if (roll > 5) {
+                this.enemies.push(new Enemy(this.canvas, this.context, this))
+            } else {
+                this.enemies.push(new Raider(this.canvas, this.context, this))
+            }
+            
+            
         }
     
 
@@ -357,41 +599,95 @@ class Game {
         }
 
 
-         // Check for blast collision
+         // Check for blast collision and melee collision
          for (let i = 0; i < this.attacks.length; i++){
 
             let attack = this.attacks[i];
 
+
+            if (this.playerShield) {
+
+                if (
+                    attack.x <= this.playerX + 75
+                    && attack.x >= this.playerX - 75
+                    && attack.y >= this.playerY + 75
+                    && attack.y <= this.playerY - 75
+                ) {
+                    console.log('Shield hit')
+                    
+                    this.attacks.pop();
+                }
+
+
+            } else if (
+                attack.x <= this.playerX + 5
+            && attack.x >= this.playerX - 5
+            && attack.y >= this.playerY + 5
+            && attack.y <= this.playerY + this.spriteHeight
+            && !this.playerDead
+            ) {
+                console.log('Player hit')
+                this.playerImage = this.playerImageHurt;
+                this.playerHurt = true;
+                this.frameCount = 3;
+                this.playerHealth -= 20;
+                if (this.playerHealth <= 0) {
+                    this.playerDead = true;
+                }
+            }
+
+
             for (let j = 0; j < this.enemies.length; j++) {
                 let enemy = this.enemies[j];
-                if (   attack.x <= enemy.x + 15
-                    && attack.x >= enemy.x - 15
-                    && attack.y >= enemy.y - 15
-                    && attack.y <= enemy.y + 15
+                if (   attack.x <= enemy.x + 5
+                    && attack.x >= enemy.x - 5
+                    && attack.y >= enemy.y + 5
+                    && attack.y <= enemy.y + this.spriteHeight
                     ) {
                         console.log('Enemy hit')
-                        enemy.image = this.enemyImageHurt;
+                        enemy.image = enemy.imageHurt;
                         enemy.frameCount = 1;
                         enemy.frameCap = 2;
                         enemy.xVel = 0;
                         this.attacks.pop();
                         enemy.health -= 20;
-                    } else if (
-                        attack.x <= this.playerX + 15
-                    && attack.x >= this.playerX - 15
-                    && attack.y >= this.playerY - 15
-                    && attack.y <= this.playerY + 15
-                    ) {
-                        console.log('PLayer hit')
-                        this.playerHealth -= 20;
-                        if (this.playerHealth <= 0) {
-                            // this.playerImage = this.playerImageDead;
+                    } else if (enemy.x <= this.playerX + 50
+                        && enemy.x >= this.playerX - 20
+                        && enemy.y >= this.playerY
+                        && enemy.y <= this.playerY + this.spriteHeight
+                        && this.playerMeleeAttack                       
+                        ) {
+
+                            console.log('Enemy hit with melee');
+                            enemy.image = enemy.imageHurt;
+                            enemy.frameCount = 1;
+                            enemy.frameCap = 2;
+                            enemy.xVel = 0;
+                            enemy.health -= 20;
                         }
-                    }
 
             }
             
         }
+
+        // // Check for player death
+        if (this.playerDead) {
+            this.context.fillStyle = 'lightgreen';
+            this.context.font = "30px Monospace";
+            this.context.fillText("Mission Failed", this.canvas.width/2 - 100, this.canvas.height/2)
+            
+            // change image
+            if(this.playerImage != this.playerImageDead) {
+                this.playerImage = this.playerImageDead;
+                this.currentPlayerFrame = 0;
+                this.playerFrameWidth = 92;
+                this.frameCount = 2;
+                this.spriteWidth = 110
+                   
+            }
+            
+        }
+        
 
         // Schedule next frame update
         requestAnimationFrame(this.update.bind(this));

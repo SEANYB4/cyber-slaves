@@ -5,6 +5,31 @@ canvas.width = 800;
 canvas.height = 600;
 
 
+class Bonus {
+
+
+    constructor(canvas, context, game, x, y) {
+        this.canvas = canvas;
+        this.context = context;
+        this.game = game;
+        this.x = x;
+        this.y = y;
+        this.image = this.game.healthBonusImage;
+    }
+
+
+    draw() {
+
+        this.context.drawImage(this.image, this.x, this.y, 30, 30);
+    }
+
+    update() {
+
+
+    }
+}
+
+
 class Enemy {
     
     constructor(canvas, context, game) {
@@ -18,6 +43,7 @@ class Enemy {
         this.imageIdle = this.game.enemy1ImageIdle;
         this.imageWalk = this.game.enemy1ImageWalkLeft;
         this.imageHurt = this.game.enemy1ImageHurt;
+        this.imageAttack = this.game.enemy1ImageAttackLeft;
         this.attacking = false;
         this.health = 100;
         this.frameCount = 5;
@@ -30,6 +56,7 @@ class Enemy {
         this.spriteWidth = 128;
         this.spriteHeight = 72;
         this.frameWidth = 128;
+        this.attackFrameCount = 3;
     }
 
     draw() {
@@ -54,8 +81,8 @@ class Enemy {
         // Attack
         if (Math.random()*100 > 99) {
             this.attacking = true;
-            this.image = this.imageIdle;
-            this.frameCount = 4;
+            this.image = this.imageAttack;
+            this.frameCount = this.attackFrameCount;
             this.attackCount = 0;
             console.log('Enemy attacking');
             this.game.attacks.push(new Blast(this.canvas, this.context, this.game, this.direction, this.x - 20, this.y + 20))
@@ -113,8 +140,13 @@ class Raider extends Enemy {
     constructor(canvas, context, game) {
         super(canvas, context, game)
         this.image = this.game.raiderImageWalkLeft;
+        this.imageWalk = this.game.raiderImageWalkLeft;
+        this.imageHurt = this.game.raiderImageHurt;
+        this.imageIdle = this.game.raiderImageIdle;
+        this.imageAttack = this.game.raiderImageAttackLeft;
         this.frameCount = 7;
         this.y = this.canvas.height-90;
+        this.attackFrameCount = 15;
     }
 
 
@@ -193,14 +225,21 @@ class Game {
         this.backgroundImage.src = 'background.jpg';
         this.attacks = [];
         this.enemies = [];
+        this.bonuses = [];
         this.frameCount = 5;
         this.playerHealth = 100;
+        this.playerHealthBars = 5;
         this.playerDead = false;
         this.playerShield = false;
         this.playerMeleeAttack = false;
         this.playerHurt = false;
+        this.playerShieldPower = 100;
         
-        // PLayer Images
+
+        // Directionality
+        this.direction = 'right';
+        
+        // Player Images
        
         // Idle
         this.playerImageIdle = new Image();
@@ -263,20 +302,22 @@ class Game {
         // ENEMY IMAGES
 
         // DESTROYER
-        // Idle
+      
         this.enemy1ImageIdle = new Image();
         this.enemy1ImageIdle.src = './Destroyer/IdleLeft.png';
 
         this.enemy1ImageWalkLeft = new Image();
         this.enemy1ImageWalkLeft.src = './Destroyer/WalkLeft.png';
 
-
-        // Enemy Hurt
         this.enemy1ImageHurt = new Image();
         this.enemy1ImageHurt.src = './Destroyer/HurtLeft.png';
 
-        // Directionality
-        this.direction = 'right';
+        this.enemy1ImageAttack = new Image();
+        this.enemy1ImageAttack.src = './Destroyer/Attack_1.png';
+
+        this.enemy1ImageAttackLeft = new Image();
+        this.enemy1ImageAttackLeft.src = './Destroyer/Attack_1Left.png';
+   
         
         // SWORDSMAN
         this.enemy2ImageIdle = new Image();
@@ -303,6 +344,20 @@ class Game {
         this.raiderImageWalkLeft = new Image();
         this.raiderImageWalkLeft.src = './Raider_1/WalkLeft.png';
 
+        this.raiderImageHurt = new Image();
+        this.raiderImageHurt.src = './Raider_1/Hurt.png';
+
+        this.raiderImageIdle = new Image();
+        this.raiderImageIdle.src = './Raider_1/Idle.png';
+
+        this.raiderImageIdleLeft = new Image();
+        this.raiderImageIdleLeft.src = './Raider_1/Idle.png';
+
+
+        this.raiderImageAttackLeft = new Image();
+        this.raiderImageAttackLeft.src = './Raider_1/ShotLeft.png';
+
+
         // ATTACK IMAGES
 
         // Blast
@@ -323,6 +378,18 @@ class Game {
 
         this.attackImage2Left = new Image();
         this.attackImage2Left.src = './Infantryman/Charge_2Left.png';
+
+
+
+        // BONUS IMAGES
+
+        this.healthBonusImage = new Image();
+        this.healthBonusImage.src = './PNG/Bonus_Items/HP_Bonus.png';
+
+
+
+
+
 
         // Platform Positions
 
@@ -359,8 +426,9 @@ class Game {
                 } else {
                     this.playerImage = this.playerImageJump;
                 }
-            } else if (event.key === 'ArrowDown' && !this.playerShield) {
+            } else if (event.key === 'ArrowDown' && !this.playerShield && (this.playerShieldPower > 20)) {
                 this.playerShield = true;
+                
 
             }
             
@@ -444,6 +512,34 @@ class Game {
     }   
 
 
+    drawHUD() {
+        const xStartHealth = 20;
+        const yStartHealth = 50;
+        const xStartShield = this.canvas.width - 200;
+        const yStartShield = 50;
+
+
+        for (let i = 1; i < this.playerHealthBars+1; i ++) {
+
+            this.context.fillStyle = "lightgreen";
+            this.context.fillRect(xStartHealth*i, yStartHealth, 15, 25);
+            this.context.strokeStyle = "blue";
+            this.context.strokeRect(xStartHealth*i, yStartHealth, 15, 25)
+        }
+
+
+        
+        this.context.fillStyle = "white";
+        this.context.fillRect(xStartShield, yStartShield, this.playerShieldPower, 25);
+
+        
+        this.context.font = "15px Monospace";
+        this.context.fillText("Power", xStartHealth, yStartHealth - 5)
+
+        this.context.fillText("Shield", xStartShield, yStartShield - 5)
+
+    }
+
 
     update() {
 
@@ -490,6 +586,24 @@ class Game {
 
         this.context.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height)
        
+
+        // Draw HUD
+        this.drawHUD();
+
+
+
+        // Create bonuses
+
+        if(this.bonuses.length == 0) {
+            this.bonuses.push(new Bonus(this.canvas, this.context, this, (Math.random()*this.canvas.width)-200, ((Math.random()*this.canvas.height)-200)));
+        }
+
+
+        // Draw bonuses
+        this.bonuses.forEach((bonus) => {
+            bonus.draw();
+        })
+
         // Draw player
     
         this.context.drawImage(
@@ -555,15 +669,33 @@ class Game {
         }
 
 
+        
 
         // DRAW SHIELD
+        if (this.playerShieldPower > 20) {
+            if (this.playerShield) {
+                this.context.strokeStyle = "white";
+                this.context.beginPath();
+                this.context.arc((this.playerX + 20), (this.playerY + 30), 75, 0, (2*Math.PI));
+                this.context.stroke();
+            } 
+        } 
 
-        if (this.playerShield) {
-            this.context.strokeStyle = "white";
-            this.context.beginPath();
-            this.context.arc((this.playerX + 20), (this.playerY + 30), 75, 0, (2*Math.PI));
-            this.context.stroke();
+        // UPDATE SHIELD STRENGTH
+
+        if (this.playerShield && this.playerShieldPower > 0) {
+            this.playerShieldPower -= 1;
+            if (this.playerShieldPower < 20) {
+                this.playerShield = false;
+            }
+
+            
+        } else {
+            if(this.playerShieldPower < 100) {
+                this.playerShieldPower += 0.5;
+            }
         }
+        
 
 
         
@@ -599,6 +731,25 @@ class Game {
         }
 
 
+        // Check for bonus collision
+        for (let i = 0; i < this.bonuses.length; i++) {
+
+            let bonus = this.bonuses[i];
+
+            if (this.playerX <= bonus.x + 5
+                && this.playerX >= bonus.x - 5
+                && this.playerY >= bonus.y - 5
+                && this.playerY <= bonus.y + 5                
+                ) {
+                    this.bonuses.pop()
+                    this.playerHealthBars += 1
+                    this.playerHealth += 20
+                }
+
+
+        }
+
+
          // Check for blast collision and melee collision
          for (let i = 0; i < this.attacks.length; i++){
 
@@ -631,6 +782,7 @@ class Game {
                 this.playerHurt = true;
                 this.frameCount = 3;
                 this.playerHealth -= 20;
+                this.playerHealthBars -= 1;
                 if (this.playerHealth <= 0) {
                     this.playerDead = true;
                 }
@@ -651,6 +803,9 @@ class Game {
                         enemy.xVel = 0;
                         this.attacks.pop();
                         enemy.health -= 20;
+                        
+                        
+                        // Check for melee collision
                     } else if (enemy.x <= this.playerX + 50
                         && enemy.x >= this.playerX - 20
                         && enemy.y >= this.playerY

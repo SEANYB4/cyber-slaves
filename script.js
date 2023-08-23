@@ -15,6 +15,9 @@ class Bonus {
         this.x = x;
         this.y = y;
         this.image = this.game.healthBonusImage;
+        this.yOffsetDown = this.y + 5;
+        this.yOffsetUp = this.y - 5;
+        this.direction = 'down';
     }
 
 
@@ -24,7 +27,17 @@ class Bonus {
     }
 
     update() {
+        if((this.y < (this.yOffsetDown)) && (this.direction == 'down')) {
+            this.y += 0.1
+        } else {
+            this.direction = 'up';
+        }
 
+        if ((this.y > this.yOffsetUp) && (this.direction == 'up')) {
+            this.y -= 0.1
+        } else {
+            this.direction = 'down';
+        }
 
     }
 }
@@ -234,6 +247,7 @@ class Game {
         this.playerMeleeAttack = false;
         this.playerHurt = false;
         this.playerShieldPower = 100;
+        this.playerSHieldDrain = false;
         
 
         // Directionality
@@ -426,8 +440,9 @@ class Game {
                 } else {
                     this.playerImage = this.playerImageJump;
                 }
-            } else if (event.key === 'ArrowDown' && !this.playerShield && (this.playerShieldPower > 20)) {
+            } else if (event.key === 'ArrowDown' && !this.playerShield && (this.playerShieldPower > 30)) {
                 this.playerShield = true;
+                this.playerShieldDrain = true;
                 
 
             }
@@ -500,7 +515,7 @@ class Game {
                 this.frameCount = 5;
 
             } else if (event.key === 'ArrowDown') {
-
+                this.playerShieldDrain = false;
                 this.playerShield = false;
                 this.frameCount = 5;
             } else if (event.key === 'q') {
@@ -595,13 +610,32 @@ class Game {
         // Create bonuses
 
         if(this.bonuses.length == 0) {
-            this.bonuses.push(new Bonus(this.canvas, this.context, this, (Math.random()*this.canvas.width)-200, ((Math.random()*this.canvas.height)-200)));
+
+            let x = Math.floor(Math.random()* this.canvas.width);
+            let y = Math.floor(Math.random() * this.canvas.height);
+            
+            if(x >this.canvas.width - 100) {
+                x = x-200;
+            } else if (x < 100) {
+                x = x + 200;
+            }
+
+            if (y < 100) {
+                y = y + 200;
+            } else if (y > this.canvas.height-100) {
+                y = y - 200;
+            }
+            
+            
+            
+            this.bonuses.push(new Bonus(this.canvas, this.context, this, x, y));
         }
 
 
         // Draw bonuses
         this.bonuses.forEach((bonus) => {
             bonus.draw();
+            bonus.update();
         })
 
         // Draw player
@@ -669,6 +703,10 @@ class Game {
         }
 
 
+        // check whether shield is on
+        if (this.playerShieldPower < 30) {
+            this.playerShield = false;
+        }
         
 
         // DRAW SHIELD
@@ -683,16 +721,13 @@ class Game {
 
         // UPDATE SHIELD STRENGTH
 
-        if (this.playerShield && this.playerShieldPower > 0) {
+        if (this.playerShieldDrain && this.playerShieldPower > 0) {
             this.playerShieldPower -= 1;
-            if (this.playerShieldPower < 20) {
-                this.playerShield = false;
-            }
-
+            
             
         } else {
             if(this.playerShieldPower < 100) {
-                this.playerShieldPower += 0.5;
+                this.playerShieldPower += 0.1;
             }
         }
         
@@ -736,10 +771,10 @@ class Game {
 
             let bonus = this.bonuses[i];
 
-            if (this.playerX <= bonus.x + 5
-                && this.playerX >= bonus.x - 5
-                && this.playerY >= bonus.y - 5
-                && this.playerY <= bonus.y + 5                
+            if (this.playerX <= bonus.x + 30
+                && this.playerX >= bonus.x - 30
+                && this.playerY >= bonus.y - 30
+                && this.playerY <= bonus.y + 30                
                 ) {
                     this.bonuses.pop()
                     this.playerHealthBars += 1
@@ -761,8 +796,8 @@ class Game {
                 if (
                     attack.x <= this.playerX + 75
                     && attack.x >= this.playerX - 75
-                    && attack.y >= this.playerY + 75
-                    && attack.y <= this.playerY - 75
+                    && attack.y >= this.playerY - 75
+                    && attack.y <= this.playerY + 75
                 ) {
                     console.log('Shield hit')
                     

@@ -43,6 +43,8 @@ class Bonus {
 }
 
 
+// ENEMY CLASSES
+
 class Enemy {
     
     constructor(canvas, context, game) {
@@ -57,6 +59,7 @@ class Enemy {
         this.imageWalk = this.game.enemy1ImageWalkLeft;
         this.imageHurt = this.game.enemy1ImageHurt;
         this.imageAttack = this.game.enemy1ImageAttackLeft;
+        this.imageDeath = this.game.enemy1ImageDeath;
         this.attacking = false;
         this.health = 100;
         this.frameCount = 5;
@@ -70,6 +73,8 @@ class Enemy {
         this.spriteHeight = 72;
         this.frameWidth = 128;
         this.attackFrameCount = 3;
+        this.deathFrameCount = 6;
+        this.dead = false;
     }
 
     draw() {
@@ -89,10 +94,15 @@ class Enemy {
     }
 
     update() {
+
+        // death
+
+        
+
         // Enemy AI
 
         // Attack
-        if (Math.random()*100 > 99) {
+        if (Math.random()*100 > 99 && !this.dead) {
             this.attacking = true;
             this.image = this.imageAttack;
             this.frameCount = this.attackFrameCount;
@@ -114,6 +124,9 @@ class Enemy {
 
             
         if (this.currentFrame >= this.frameCount) {
+            if (this.dead) {
+                this.game.enemies.splice(0, 1);
+            }
             this.currentFrame = 0;
         }
 
@@ -123,13 +136,25 @@ class Enemy {
         }
 
         this.frameOffset += 1;
-        this.x += this.xVel;
+
+
+        // MOVEMENT
+        if (!this.dead) {
+            this.x += this.xVel;
+        }
+        
 
         if (this.x < 0) {
-            this.game.enemies.pop();
-        } else if (this.health <= 0) {
-            this.game.enemies.pop()
+            this.game.enemies.splice(0, 1);
+        } else if (this.health <= 0 && this.image != this.imageDeath) {
+            this.dead = true;
+            this.image = this.imageDeath;
+            this.frameCount = this.deathFrameCount;
+            this.currentFrame = 0
+            
         }
+
+        
     }
 }
 
@@ -144,6 +169,9 @@ class Enemy2 extends Enemy {
         this.imageIdle = this.game.enemy2ImageIdle;
         this.imageWalk = this.game.enemy2ImageWalk;
         this.imageHurt = this.game.enemy2ImageHurtLeft;
+        this.imageAttack = this.game.enemy2ImageAttack1Left;
+        this.imageDeath = this.game.enemy2ImageDeath;
+        this.deathFrameCount = 3;
     }
 }
 
@@ -157,9 +185,12 @@ class Raider extends Enemy {
         this.imageHurt = this.game.raiderImageHurt;
         this.imageIdle = this.game.raiderImageIdle;
         this.imageAttack = this.game.raiderImageAttackLeft;
+        this.imageDeath = this.game.raiderImageDeath;
+
         this.frameCount = 7;
         this.y = this.canvas.height-90;
         this.attackFrameCount = 15;
+        this.deathFrameCount = 3;
     }
 
 
@@ -331,6 +362,10 @@ class Game {
 
         this.enemy1ImageAttackLeft = new Image();
         this.enemy1ImageAttackLeft.src = './Destroyer/Attack_1Left.png';
+
+
+        this.enemy1ImageDeath = new Image();
+        this.enemy1ImageDeath.src = './Destroyer/Dead.png';
    
         
         // SWORDSMAN
@@ -346,6 +381,12 @@ class Game {
 
         this.enemy2ImageHurtLeft = new Image();
         this.enemy2ImageHurtLeft.src = './Swordsman/HurtLeft.png';
+
+        this.enemy2ImageAttack1Left = new Image();
+        this.enemy2ImageAttack1Left.src = './Swordsman/Attack_1Left.png';
+
+        this.enemy2ImageDeath = new Image();
+        this.enemy2ImageDeath.src = './Swordsman/Dead.png';
 
 
 
@@ -370,6 +411,10 @@ class Game {
 
         this.raiderImageAttackLeft = new Image();
         this.raiderImageAttackLeft.src = './Raider_1/ShotLeft.png';
+
+
+        this.raiderImageDeath = new Image();
+        this.raiderImageDeath.src = './Raider_1/Dead.png';
 
 
         // ATTACK IMAGES
@@ -727,7 +772,7 @@ class Game {
             
         } else {
             if(this.playerShieldPower < 100) {
-                this.playerShieldPower += 0.1;
+                this.playerShieldPower += 0.5;
             }
         }
         
@@ -756,6 +801,21 @@ class Game {
             
             
         }
+
+
+        // Randomly add enemies
+        // if (Math.random() > 0.99) {
+
+        //     let roll = Math.random()*10
+        //     if(roll > 8) {
+        //         this.enemies.push(new Enemy2(this.canvas, this.context, this))
+        //     } else if (roll > 5) {
+        //         this.enemies.push(new Enemy(this.canvas, this.context, this))
+        //     } else {
+        //         this.enemies.push(new Raider(this.canvas, this.context, this))
+        //     }
+
+        // }
     
 
         // Draw enemies
@@ -801,7 +861,7 @@ class Game {
                 ) {
                     console.log('Shield hit')
                     
-                    this.attacks.pop();
+                    this.attacks.splice(0, 1);
                 }
 
 
@@ -836,13 +896,13 @@ class Game {
                         enemy.frameCount = 1;
                         enemy.frameCap = 2;
                         enemy.xVel = 0;
-                        this.attacks.pop();
+                        this.attacks.splice(0, 1);
                         enemy.health -= 20;
                         
                         
                         // Check for melee collision
                     } else if (enemy.x <= this.playerX + 50
-                        && enemy.x >= this.playerX - 20
+                        && enemy.x >= this.playerX
                         && enemy.y >= this.playerY
                         && enemy.y <= this.playerY + this.spriteHeight
                         && this.playerMeleeAttack                       
@@ -869,7 +929,7 @@ class Game {
             // change image
             if(this.playerImage != this.playerImageDead) {
                 this.playerImage = this.playerImageDead;
-                this.currentPlayerFrame = 0;
+                // this.currentPlayerFrame = 0;
                 this.playerFrameWidth = 92;
                 this.frameCount = 2;
                 this.spriteWidth = 110

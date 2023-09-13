@@ -149,7 +149,7 @@ class Enemy {
         } else if (this.health <= 0 && this.image != this.imageDeath) {
             this.dead = true;
             this.image = this.imageDeath;
-            this.frameCount = this.deathFrameCount;
+               this.frameCount = this.deathFrameCount;
             this.currentFrame = 0
             
         }
@@ -279,6 +279,8 @@ class Game {
         this.playerHurt = false;
         this.playerShieldPower = 100;
         this.playerSHieldDrain = false;
+
+        this.codec = false;
         
 
         // Directionality
@@ -447,6 +449,11 @@ class Game {
 
 
 
+        // CODEC
+
+        this.doctorImage = new Image();
+        this.doctorImage.src = './pixie(4)_resized.png';
+
 
 
 
@@ -540,6 +547,15 @@ class Game {
                 this.currentPlayerFrame = 0;
                 
 
+            } else if(event.key == 'r') {
+
+                if (this.codec) {
+                    this.codec = false;
+                } else {
+                    this.codec = true;
+                }
+                
+                
             }
         });
 
@@ -644,12 +660,25 @@ class Game {
 
         // Draw background
 
+       
         this.context.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height)
        
 
         // Draw HUD
         this.drawHUD();
 
+
+
+        // Draw codec
+
+        if (this.codec) {
+
+            this.context.fillStyle = 'red';
+            this.context.fillRect(this.canvas.width- 165, 95, 190, 120)
+            this.context.fillStyle = 'blue';
+            this.context.fillRect(this.canvas.width- 160, 100, 180, 110)
+            this.context.drawImage(this.doctorImage, this.canvas.width - 100, 100);
+        }
 
 
         // Create bonuses

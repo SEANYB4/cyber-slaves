@@ -43,6 +43,20 @@ class Bonus {
 }
 
 
+class Ammo extends Bonus {
+
+    constructor(canvas, context, game, x, y) {
+
+        super(canvas, context, game, x, y);
+        this.image = this.game.ammoBonusImage;
+    }
+
+
+
+
+}
+
+
 // ENEMY CLASSES
 
 class Enemy {
@@ -114,7 +128,7 @@ class Enemy {
 
         if (this.attacking) {
             this.attackCount += 1;
-            if (this.attackCount >= 50) {
+            if (this.attackCount >= 30) {
                 this.attacking = false;
                 this.image = this.imageWalk;
                 this.frameCount = 5;
@@ -126,8 +140,12 @@ class Enemy {
         if (this.currentFrame >= this.frameCount) {
             if (this.dead) {
                 this.game.enemies.splice(0, 1);
+                
+            } else {
+                this.currentFrame = 0;
             }
-            this.currentFrame = 0;
+            
+            
         }
 
         if (this.frameOffset > 7) {
@@ -149,7 +167,8 @@ class Enemy {
         } else if (this.health <= 0 && this.image != this.imageDeath) {
             this.dead = true;
             this.image = this.imageDeath;
-               this.frameCount = this.deathFrameCount;
+            this.frameCount = this.deathFrameCount;
+            this.frameWidth = 110;
             this.currentFrame = 0
             
         }
@@ -278,13 +297,23 @@ class Game {
         this.playerMeleeAttack = false;
         this.playerHurt = false;
         this.playerShieldPower = 100;
-        this.playerSHieldDrain = false;
+        this.playerShieldDrain = false;
+        this.playerChargeAmmo = 5;
 
         this.codec = false;
         
 
         // Directionality
         this.direction = 'right';
+
+
+
+
+        // Game Sounds
+
+        this.jumpSfx = new Audio("./Sounds/mixkit-arcade-retro-jump-223.wav");
+
+
         
         // Player Images
        
@@ -363,7 +392,7 @@ class Game {
         this.enemy1ImageAttack.src = './Destroyer/Attack_1.png';
 
         this.enemy1ImageAttackLeft = new Image();
-        this.enemy1ImageAttackLeft.src = './Destroyer/Attack_1Left.png';
+        this.enemy1ImageAttackLeft.src = './Destroyer/Shot_1Left.png';
 
 
         this.enemy1ImageDeath = new Image();
@@ -412,7 +441,7 @@ class Game {
 
 
         this.raiderImageAttackLeft = new Image();
-        this.raiderImageAttackLeft.src = './Raider_1/ShotLeft.png';
+        this.raiderImageAttackLeft.src = './Raider_1/Shot.png';
 
 
         this.raiderImageDeath = new Image();
@@ -448,6 +477,8 @@ class Game {
         this.healthBonusImage.src = './PNG/Bonus_Items/HP_Bonus.png';
 
 
+        this.ammoBonusImage = new Image();
+        this.ammoBonusImage.src = './PNG/Bonus_Items/Rockets_Bonus.png';
 
         // CODEC
 
@@ -487,6 +518,7 @@ class Game {
             } else if (event.key === 'ArrowUp' && !this.isJumping && !this.playerDead) {
                 this.playerVelY = -12;
                 this.isJumping = true;
+                this.jumpSfx.play();
                 if (this.direction == 'left') {
                     this.playerImage = this.playerImageJumpLeft;
                 } else {
@@ -516,19 +548,27 @@ class Game {
 
             } else if (event.key === 'e' && !this.playerDead) {
                 
-
-                if(this.direction == 'left') {
-                    this.playerImage = this.playerImageShot2Left;
-                    this.attacks.push(new Charge(this.canvas, this.context, this, this.direction, this.playerX - 20, this.playerY + 20))
-                    
+                if (this.playerChargeAmmo <= 0) {
+                    console.log('Not enough charge ammo')
                 } else {
-                    this.playerImage = this.playerImageShot2;
-                    this.attacks.push(new Charge(this.canvas, this.context, this, this.direction, this.playerX + 70, this.playerY + 20))
+
+                    this.playerChargeAmmo -= 1;
+
+                    if(this.direction == 'left') {
+                        this.playerImage = this.playerImageShot2Left;
+                        this.attacks.push(new Charge(this.canvas, this.context, this, this.direction, this.playerX - 20, this.playerY + 20))
+                        
+                    } else {
+                        this.playerImage = this.playerImageShot2;
+                        this.attacks.push(new Charge(this.canvas, this.context, this, this.direction, this.playerX + 70, this.playerY + 20))
+                    }
+                    
+                    this.attacking = true;
+                    this.currentPlayerFrame = 0;
+                    this.frameCount = 4;
+
                 }
-                
-                this.attacking = true;
-                this.currentPlayerFrame = 0;
-                this.frameCount = 4;
+                 
 
             } else if (event.key === 'q' && !this.playerDead) {
                 
@@ -593,6 +633,8 @@ class Game {
         const yStartHealth = 50;
         const xStartShield = this.canvas.width - 200;
         const yStartShield = 50;
+        const xStartAmmo = 20;
+        const yStartAmmo = 100;
 
 
         for (let i = 1; i < this.playerHealthBars+1; i ++) {
@@ -603,6 +645,13 @@ class Game {
             this.context.strokeRect(xStartHealth*i, yStartHealth, 15, 25)
         }
 
+        for (let i = 1; i < this.playerChargeAmmo+1; i ++) {
+
+            this.context.fillStyle = "orange";
+            this.context.fillRect(xStartAmmo*i, yStartAmmo, 15, 25);
+            this.context.strokeStyle = "blue";
+            this.context.strokeRect(xStartAmmo*i, yStartAmmo, 15, 25)
+        }
 
         
         this.context.fillStyle = "white";
@@ -610,9 +659,10 @@ class Game {
 
         
         this.context.font = "15px Monospace";
-        this.context.fillText("Power", xStartHealth, yStartHealth - 5)
+        this.context.fillText("Power", xStartHealth, yStartHealth - 5);
+        this.context.fillText("Charge Ammo", xStartAmmo, yStartAmmo - 5);
 
-        this.context.fillText("Shield", xStartShield, yStartShield - 5)
+        this.context.fillText("Shield", xStartShield, yStartShield - 5);
 
     }
 
@@ -701,8 +751,13 @@ class Game {
             }
             
             
+            if ((Math.random()*10) > 5) {
+                this.bonuses.push(new Bonus(this.canvas, this.context, this, x, y));
+            } else {
+                this.bonuses.push(new Ammo(this.canvas, this.context, this, x, y));
+            }
             
-            this.bonuses.push(new Bonus(this.canvas, this.context, this, x, y));
+            
         }
 
 
@@ -832,21 +887,7 @@ class Game {
         }
 
 
-        // Randomly add enemies
-        // if (Math.random() > 0.99) {
-
-        //     let roll = Math.random()*10
-        //     if(roll > 8) {
-        //         this.enemies.push(new Enemy2(this.canvas, this.context, this))
-        //     } else if (roll > 5) {
-        //         this.enemies.push(new Enemy(this.canvas, this.context, this))
-        //     } else {
-        //         this.enemies.push(new Raider(this.canvas, this.context, this))
-        //     }
-
-        // }
     
-
         // Draw enemies
         for (let i=0; i < this.enemies.length; i++) {
             let enemy = this.enemies[i];
@@ -865,9 +906,17 @@ class Game {
                 && this.playerY >= bonus.y - 30
                 && this.playerY <= bonus.y + 30                
                 ) {
-                    this.bonuses.pop()
-                    this.playerHealthBars += 1
-                    this.playerHealth += 20
+                    let bonus = this.bonuses.pop()
+                    if (bonus instanceof Ammo) {
+
+                        this.playerChargeAmmo += 1;
+                        
+                    } else if (bonus instanceof Bonus) {
+                        
+                        this.playerHealthBars += 1;
+                        this.playerHealth += 20;
+                    }
+                    
                 }
 
 

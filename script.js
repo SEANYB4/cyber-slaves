@@ -109,9 +109,6 @@ class Enemy {
 
     update() {
 
-        // death
-
-        
 
         // Enemy AI
 
@@ -165,6 +162,7 @@ class Enemy {
         if (this.x < 0) {
             this.game.enemies.splice(0, 1);
         } else if (this.health <= 0 && this.image != this.imageDeath) {
+            this.game.score += 10;
             this.dead = true;
             this.image = this.imageDeath;
             this.frameCount = this.deathFrameCount;
@@ -300,8 +298,18 @@ class Game {
         this.playerShieldDrain = false;
         this.playerChargeAmmo = 5;
 
-        this.codec = false;
+        this.win = false;
+
         
+        // CODEC
+        
+        this.codec = false;
+        this.codecMessages = [
+            "Well done RX-5!"
+        ];
+        
+
+        this.score = 0;
 
         // Directionality
         this.direction = 'right';
@@ -587,16 +595,7 @@ class Game {
                 this.currentPlayerFrame = 0;
                 
 
-            } else if(event.key == 'r') {
-
-                if (this.codec) {
-                    this.codec = false;
-                } else {
-                    this.codec = true;
-                }
-                
-                
-            }
+            } 
         });
 
         document.addEventListener('keyup', (event) => {
@@ -664,6 +663,8 @@ class Game {
 
         this.context.fillText("Shield", xStartShield, yStartShield - 5);
 
+        this.context.fillText("Score: " + String(this.score), xStartShield, yStartShield + 50);
+
     }
 
 
@@ -718,6 +719,9 @@ class Game {
         this.drawHUD();
 
 
+        
+
+
 
         // Draw codec
 
@@ -727,7 +731,10 @@ class Game {
             this.context.fillRect(this.canvas.width- 165, 95, 190, 120)
             this.context.fillStyle = 'blue';
             this.context.fillRect(this.canvas.width- 160, 100, 180, 110)
-            this.context.drawImage(this.doctorImage, this.canvas.width - 100, 100);
+            this.context.drawImage(this.doctorImage, this.canvas.width - 90, 100);
+            this.context.fillStyle = 'white';
+            this.context.font = "10px Monospace";
+            this.context.fillText(this.codecMessages[0], this.canvas.width - 158, 115);
         }
 
 
@@ -907,11 +914,11 @@ class Game {
                 && this.playerY <= bonus.y + 30                
                 ) {
                     let bonus = this.bonuses.pop()
-                    if (bonus instanceof Ammo) {
-
+                    if (bonus instanceof Ammo && this.playerChargeAmmo<10) {
+                        
                         this.playerChargeAmmo += 1;
                         
-                    } else if (bonus instanceof Bonus) {
+                    } else if (bonus instanceof Bonus && this.playerHealthBars<10) {
                         
                         this.playerHealthBars += 1;
                         this.playerHealth += 20;
@@ -939,7 +946,7 @@ class Game {
                 ) {
                     console.log('Shield hit')
                     
-                    this.attacks.splice(0, 1);
+                    this.attacks.splice(i, 1);
                 }
 
 
@@ -974,8 +981,14 @@ class Game {
                         enemy.frameCount = 1;
                         enemy.frameCap = 2;
                         enemy.xVel = 0;
-                        this.attacks.splice(0, 1);
-                        enemy.health -= 20;
+                        this.attacks.splice(i, 1);
+                        if (attack instanceof Charge) {
+                            enemy.health -= 100
+                        }
+                        else if (attack instanceof Blast) {
+                            enemy.health -= 20;
+                        }
+                        
                         
                         
                         // Check for melee collision
@@ -998,6 +1011,27 @@ class Game {
             
         }
 
+        // Check for codec message
+
+        if ((this.score%100 == 0) && this.score != 0) {
+            this.codec = true;
+        } else {
+            this.codec = false;
+        }
+
+
+        // Check for level end
+
+        if (this.score >= 200) {
+
+            this.win = true;
+            this.context.fillStyle = 'lightgreen';
+            this.context.font = "30px Monospace";
+            this.context.fillText("Mission Success!", this.canvas.width/2 - 100, this.canvas.height/2)
+            
+        }
+
+        
         // // Check for player death
         if (this.playerDead) {
             this.context.fillStyle = 'lightgreen';
@@ -1018,7 +1052,10 @@ class Game {
         
 
         // Schedule next frame update
-        requestAnimationFrame(this.update.bind(this));
+        if (!this.win) {
+            requestAnimationFrame(this.update.bind(this));
+        }
+        
     }
 
 }

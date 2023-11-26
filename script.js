@@ -5,6 +5,10 @@ canvas.width = 800;
 canvas.height = 600;
 
 
+
+
+
+
 class Bonus {
 
 
@@ -88,6 +92,7 @@ class Enemy {
         this.frameWidth = 128;
         this.attackFrameCount = 3;
         this.deathFrameCount = 6;
+        this.deathFrameWidth = 110;
         this.dead = false;
     }
 
@@ -118,7 +123,6 @@ class Enemy {
             this.image = this.imageAttack;
             this.frameCount = this.attackFrameCount;
             this.attackCount = 0;
-            console.log('Enemy attacking');
             this.game.attacks.push(new Blast(this.canvas, this.context, this.game, this.direction, this.x - 20, this.y + 20))
             this.xVel = 0;
         }
@@ -166,7 +170,7 @@ class Enemy {
             this.dead = true;
             this.image = this.imageDeath;
             this.frameCount = this.deathFrameCount;
-            this.frameWidth = 110;
+            this.frameWidth = this.deathFrameWidth;
             this.currentFrame = 0
             
         }
@@ -188,7 +192,8 @@ class Enemy2 extends Enemy {
         this.imageHurt = this.game.enemy2ImageHurtLeft;
         this.imageAttack = this.game.enemy2ImageAttack1Left;
         this.imageDeath = this.game.enemy2ImageDeath;
-        this.deathFrameCount = 3;
+        this.deathFrameCount = 2;
+        this.deathFrameWidth = 90;
     }
 }
 
@@ -214,6 +219,88 @@ class Raider extends Enemy {
 }
 
 
+class Drone extends Enemy{
+
+
+    constructor(canvas, context, game, direction) {
+        super(canvas, context, game);
+        this.canvas = canvas;
+        this.context = context;
+        this.game = game;
+        this.direction = direction;
+        this.image = this.game.drone1Image;
+        this.frameCount = 4;
+        this.spriteWidth = 90;
+        
+
+        if (this.direction == 'left') {
+            this.x = this.canvas.width;
+            this.xVel = -5;
+        } else {
+
+            this.x = 0;
+            this.xVel = 5;
+        }
+       
+      
+  
+        this.y = 200;
+        this.yVel = 0;
+
+        if (this.x < 0) {
+            this.game.enemies.splice(0, 1);
+        } else if (this.x > this.game.canvas.width) {
+            this.game.enemies.splice(0, 1);
+        }
+
+    }
+
+
+
+    update() {
+
+        this.x += this.xVel;
+        this.y += this.yVel;
+
+        if(Math.random() >= 0.8) {
+            this.dropBomb();
+        }
+        
+    }
+
+    dropBomb() {
+
+        this.game.bombs.push(new Bomb(this.canvas, this.context, this.game, this.x, this.y));
+
+    }
+}
+
+
+class Bomb {
+    constructor(canvas, context, game, x, y) {
+
+        this.canvas = canvas;
+        this.context = context;
+        this.game = game;
+        this.x = x;
+        this.y = y;   
+        this.xVel = 0;
+        this.yVel = 5;
+        this.image = this.game.bombImage;
+    }
+
+
+    draw() {
+
+        this.context.drawImage(this.image, this.x, this.y, 30, 30);
+    }
+
+    update() {
+
+        this.x += this.xVel;
+        this.y += this.yVel;
+    }
+}
 
 class Blast {
 
@@ -280,11 +367,12 @@ class Game {
         this.playerVelX = 0;
         this.playerVelY = 0;
         this.isJumping = false;
-        this.spriteWidth = 128;
+        this.spriteWidth = 120;
         this.spriteHeight = 72;
         this.backgroundImage = new Image();
         this.backgroundImage.src = 'background.jpg';
         this.attacks = [];
+        this.bombs = [];
         this.enemies = [];
         this.bonuses = [];
         this.frameCount = 5;
@@ -319,7 +407,13 @@ class Game {
 
         // Game Sounds
 
-        this.jumpSfx = new Audio("./Sounds/mixkit-arcade-retro-jump-223.wav");
+        this.audioObjects = [];
+
+        this.jumpSfx = new Audio("./Sounds/jump.wav");
+        this.bonusSfx = new Audio("./Sounds/bonus.wav");
+        this.chargeSfx = new Audio("./Sounds/charge.wav");
+        this.blastSfx = new Audio("./Sounds/blast.wav");
+        this.shieldSfx = new Audio("./Sounds/shield.wav");
 
 
         
@@ -428,6 +522,10 @@ class Game {
         this.enemy2ImageDeath.src = './Swordsman/Dead.png';
 
 
+        // DRONE 1
+
+        this.drone1Image = new Image();
+        this.drone1Image.src = './1 Drones/4/Idle.png';
 
 
         // RAIDER
@@ -457,6 +555,12 @@ class Game {
 
 
         // ATTACK IMAGES
+
+
+        // Bomb
+
+        this.bombImage = new Image();
+        this.bombImage.src = './SCML/Bombs/Bomb_01_1.png'
 
         // Blast
         this.blastImage = new Image();
@@ -526,13 +630,14 @@ class Game {
             } else if (event.key === 'ArrowUp' && !this.isJumping && !this.playerDead) {
                 this.playerVelY = -12;
                 this.isJumping = true;
-                this.jumpSfx.play();
+                this.playSoundEffect('./Sounds/jump.wav');
                 if (this.direction == 'left') {
                     this.playerImage = this.playerImageJumpLeft;
                 } else {
                     this.playerImage = this.playerImageJump;
                 }
             } else if (event.key === 'ArrowDown' && !this.playerShield && (this.playerShieldPower > 30)) {
+                this.playSoundEffect('./Sounds/shield.wav');
                 this.playerShield = true;
                 this.playerShieldDrain = true;
                 
@@ -541,6 +646,7 @@ class Game {
             
             else if (event.key === 'w' && !this.playerDead) {
                 
+                this.playSoundEffect('./Sounds/blast.wav');
                 
                 if(this.direction == 'left') {
                     this.playerImage = this.playerImageShotLeft;
@@ -560,6 +666,7 @@ class Game {
                     console.log('Not enough charge ammo')
                 } else {
 
+                    this.playSoundEffect('./Sounds/charge.wav');
                     this.playerChargeAmmo -= 1;
 
                     if(this.direction == 'left') {
@@ -626,6 +733,20 @@ class Game {
 
     }   
 
+
+    playSoundEffect(soundFile) {
+        var audio = new Audio(soundFile);
+        this.audioObjects.push(audio);
+        audio.play();
+
+        // Remove the audio object from the array when it finishes playing
+        audio.addEventListener('ended', () => {
+            var index = this.audioObjects.indexOf(audio);
+            if (index > -1) {
+                this.audioObjects.splice(index, 1);
+            }
+        })
+    }
 
     drawHUD() {
         const xStartHealth = 20;
@@ -880,19 +1001,30 @@ class Game {
 
 
         // ENEMIES
-        if (this.enemies.length <= 0) {
+        if (this.enemies.length <= 2) {
             let roll = Math.random()*10
             if(roll > 8) {
+                console.log(this.enemies);
                 this.enemies.push(new Enemy2(this.canvas, this.context, this))
             } else if (roll > 5) {
+                console.log(this.enemies);
                 this.enemies.push(new Enemy(this.canvas, this.context, this))
-            } else {
+            } else if (roll > 3) {
+                console.log(this.enemies);
                 this.enemies.push(new Raider(this.canvas, this.context, this))
+            } else {
+                if(Math.random() >= 0.5) {
+                    console.log(this.enemies);
+                    this.enemies.push(new Drone(this.canvas, this.context, this, 'left'));
+                } else {
+                    console.log(this.enemies);
+                    this.enemies.push(new Drone(this.canvas, this.context, this, 'right'));
+                }
+                
             }
             
             
         }
-
 
     
         // Draw enemies
@@ -913,6 +1045,7 @@ class Game {
                 && this.playerY >= bonus.y - 30
                 && this.playerY <= bonus.y + 30                
                 ) {
+                    this.playSoundEffect('./Sounds/bonus.wav');
                     let bonus = this.bonuses.pop()
                     if (bonus instanceof Ammo && this.playerChargeAmmo<10) {
                         
@@ -930,6 +1063,37 @@ class Game {
         }
 
 
+        // Ceck for bomb collision
+
+        this.bombs.forEach((bomb) => {
+            bomb.draw();
+            bomb.update();
+            if(bomb.y >= this.canvas.height - 50) {
+                this.bombs.splice(this.bombs.indexOf(bomb), 1);
+                
+            }
+
+            if(
+                bomb.x >= this.playerX - 50 &&
+                bomb.x <= this.playerX + 50 &&
+                bomb.y >= this.playerY - 50 &&
+                bomb.y <= this.playerY + 50
+            ) {
+
+                if(this.playerShield) {
+                    this.bombs.splice(this.bombs.indexOf(bomb), 1);
+                }
+                else {
+                    this.bombs.splice(this.bombs.indexOf(bomb), 1);
+                    this.playerHealth -= 20;
+                    this.playerHealthBars -= 1;
+                }
+               
+               
+            }
+
+        })
+
          // Check for blast collision and melee collision
          for (let i = 0; i < this.attacks.length; i++){
 
@@ -943,9 +1107,7 @@ class Game {
                     && attack.x >= this.playerX - 75
                     && attack.y >= this.playerY - 75
                     && attack.y <= this.playerY + 75
-                ) {
-                    console.log('Shield hit')
-                    
+                ) {                
                     this.attacks.splice(i, 1);
                 }
 
@@ -957,15 +1119,13 @@ class Game {
             && attack.y <= this.playerY + this.spriteHeight
             && !this.playerDead
             ) {
-                console.log('Player hit')
+               
                 this.playerImage = this.playerImageHurt;
                 this.playerHurt = true;
                 this.frameCount = 3;
                 this.playerHealth -= 20;
                 this.playerHealthBars -= 1;
-                if (this.playerHealth <= 0) {
-                    this.playerDead = true;
-                }
+                
             }
 
 
@@ -976,7 +1136,7 @@ class Game {
                     && attack.y >= enemy.y + 5
                     && attack.y <= enemy.y + this.spriteHeight
                     ) {
-                        console.log('Enemy hit')
+                    
                         enemy.image = enemy.imageHurt;
                         enemy.frameCount = 1;
                         enemy.frameCap = 2;
@@ -998,8 +1158,6 @@ class Game {
                         && enemy.y <= this.playerY + this.spriteHeight
                         && this.playerMeleeAttack                       
                         ) {
-
-                            console.log('Enemy hit with melee');
                             enemy.image = enemy.imageHurt;
                             enemy.frameCount = 1;
                             enemy.frameCap = 2;
@@ -1050,6 +1208,10 @@ class Game {
             
         }
         
+
+        if (this.playerHealth <= 0) {
+            this.playerDead = true;
+        }
 
         // Schedule next frame update
         if (!this.win) {

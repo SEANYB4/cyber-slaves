@@ -211,8 +211,9 @@ class Raider extends Enemy {
 
         this.frameCount = 7;
         this.y = this.canvas.height-90;
-        this.attackFrameCount = 15;
+        this.attackFrameCount = 5;
         this.deathFrameCount = 3;
+        
     }
 
 
@@ -731,6 +732,13 @@ class Game {
             }
         });
 
+        document.addEventListener('click', (event) => {
+
+            console.log(event);
+            // ADD EVENT LISTENER TO RELOAD PAGE WHEN USER CLICKS RESTART OR ADVANCE LEVEL
+
+        })
+
     }   
 
 
@@ -1048,18 +1056,12 @@ class Game {
                     this.playSoundEffect('./Sounds/bonus.wav');
                     let bonus = this.bonuses.pop()
                     if (bonus instanceof Ammo && this.playerChargeAmmo<10) {
-                        
                         this.playerChargeAmmo += 1;
-                        
                     } else if (bonus instanceof Bonus && this.playerHealthBars<10) {
-                        
                         this.playerHealthBars += 1;
                         this.playerHealth += 20;
                     }
-                    
                 }
-
-
         }
 
 
@@ -1186,6 +1188,11 @@ class Game {
             this.context.fillStyle = 'lightgreen';
             this.context.font = "30px Monospace";
             this.context.fillText("Mission Success!", this.canvas.width/2 - 100, this.canvas.height/2)
+
+            // Button to advance level
+            this.context.fillRect(this.canvas.width/2 - 100, this.canvas.height/2 + 50, 200, 50);
+            this.context.fillStyle = 'black';
+            this.context.fillText("Next Level", this.canvas.width/2 - 80, this.canvas.height/2 + 80)
             
         }
 
@@ -1208,6 +1215,12 @@ class Game {
             
         }
         
+
+        if(this.playerDead) {
+            this.context.fillRect(this.canvas.width/2 - 100, this.canvas.height/2 + 50, 200, 50);
+            this.context.fillStyle = 'black';
+            this.context.fillText("Restart", this.canvas.width/2 - 80, this.canvas.height/2 + 80)
+        }
 
         if (this.playerHealth <= 0) {
             this.playerDead = true;

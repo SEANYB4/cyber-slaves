@@ -220,8 +220,7 @@ class Raider extends Enemy {
 }
 
 
-class Drone extends Enemy{
-
+class Drone extends Enemy {
 
     constructor(canvas, context, game, direction) {
         super(canvas, context, game);
@@ -233,47 +232,37 @@ class Drone extends Enemy{
         this.frameCount = 4;
         this.spriteWidth = 90;
         
-
         if (this.direction == 'left') {
             this.x = this.canvas.width - 50;
             this.xVel = -5;
         } else {
-
             this.x = 50;
             this.xVel = 5;
         }
        
-      
-  
         this.y = 200;
         this.yVel = 0;
-        const index = this.game.enemies.indexOf(this);
-
-        if (this.x < 0) {
-            this.game.enemies.splice(index, 1);
-        } else if (this.x > this.game.canvas.width) {
-            this.game.enemies.splice(index, 1);
-        }
-
     }
 
-
-
     update() {
-
         this.x += this.xVel;
         this.y += this.yVel;
+
+        // Remove drone if it goes off screen
+        if (this.x < 0 || this.x > this.canvas.width) {
+            const index = this.game.enemies.indexOf(this);
+            if (index > -1) {
+                this.game.enemies.splice(index, 1);
+            }
+        }
 
         if(Math.random() >= 0.8) {
             this.dropBomb();
         }
-        
     }
 
     dropBomb() {
-
         this.game.bombs.push(new Bomb(this.canvas, this.context, this.game, this.x, this.y));
-
     }
 }
 
@@ -364,6 +353,9 @@ class Game {
     constructor(ctx, canvas) {
         this.canvas = canvas;
         this.context = ctx;
+        this.gameLoopRunning = false;
+        this.animationFrameId = null;
+        this.gameStarted = false;
         this.playerX = 50;
         this.playerY = canvas.height - 100;
         this.playerVelX = 0;
@@ -371,8 +363,17 @@ class Game {
         this.isJumping = false;
         this.spriteWidth = 120;
         this.spriteHeight = 72;
+        
+        // Background images array
+        this.backgroundImages = [
+            './Levels/level_1.jpg',
+            './Levels/level_2.png'
+        ];
+        this.currentBackgroundIndex = 0;
+        
+        // Initialize first background
         this.backgroundImage = new Image();
-        this.backgroundImage.src = 'background.jpg';
+        this.backgroundImage.src = this.backgroundImages[this.currentBackgroundIndex];
         this.attacks = [];
         this.bombs = [];
         this.enemies = [];
@@ -417,6 +418,11 @@ class Game {
         this.blastSfx = new Audio("./Sounds/blast.wav");
         this.shieldSfx = new Audio("./Sounds/shield.wav");
         this.restartSfx = new Audio("./Sounds/restart.wav");
+
+
+        // Game music
+        this.gameMusic = new Audio("./Music/tanks.mp3");
+        this.gameMusic.loop = true;
 
 
         
@@ -735,29 +741,102 @@ class Game {
         });
 
         document.addEventListener('click', (event) => {
-
-            console.log(event);
-            // ADD EVENT LISTENER TO RELOAD PAGE WHEN USER CLICKS RESTART OR ADVANCE LEVEL
             let rect = this.canvas.getBoundingClientRect();
             let x = event.clientX - rect.left;
             let y = event.clientY - rect.top;
-            
 
-
-            // RESTART BUTTON
-            // this.context.fillRect(this.canvas.width/2 - 100, this.canvas.height/2 + 50, 200, 50);
-            if(x <= this.canvas.width/2 + 100 && x >= this.canvas.width/2 - 100 && y >= this.canvas.height/2 + 100 && y <= this.canvas.height/2 + 150) {
-
-                location.reload();
-                this.playSoundEffect('./Sounds/restart.wav');
-                
+            // Start game button
+            if (!this.gameStarted && x <= this.canvas.width/2 + 100 && x >= this.canvas.width/2 - 100 && y >= this.canvas.height/2 + 50 && y <= this.canvas.height/2 + 100) {
+                this.gameStarted = true;
+                this.gameMusic.play();
+                this.gameLoopRunning = true;
+                this.update();
             }
-
-
+            // Restart button
+            else if (this.gameStarted && x <= this.canvas.width/2 + 100 && x >= this.canvas.width/2 - 100 && y >= this.canvas.height/2 + 100 && y <= this.canvas.height/2 + 150) {
+                this.playSoundEffect('./Sounds/restart.wav');
+                this.resetGame();
+                this.update();
+            }
         })
 
+        // Add start screen
+        this.drawStartScreen();
     }   
 
+    drawStartScreen() {
+        // Clear canvas
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw background
+        this.context.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw title
+        this.context.fillStyle = 'lightgreen';
+        this.context.font = "40px Monospace";
+        this.context.fillText("Cyber Slaves", this.canvas.width/2 - 150, this.canvas.height/2 - 50);
+        
+        // Draw start button
+        this.context.fillRect(this.canvas.width/2 - 100, this.canvas.height/2 + 50, 200, 50);
+        this.context.fillStyle = 'black';
+        this.context.font = "30px Monospace";
+        this.context.fillText("Start Game", this.canvas.width/2 - 80, this.canvas.height/2 + 80);
+    }
+
+    resetGame() {
+        // Cancel the current animation frame if it exists
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        
+        // Reset game state
+        this.playerX = 50;
+        this.playerY = this.canvas.height - 100;
+        this.playerVelX = 0;
+        this.playerVelY = 0;
+        this.isJumping = false;
+        this.playerHealth = 100;
+        this.playerHealthBars = 5;
+        this.playerDead = false;
+        this.playerShield = false;
+        this.playerMeleeAttack = false;
+        this.playerHurt = false;
+        this.playerShieldPower = 100;
+        this.playerShieldDrain = false;
+        this.playerChargeAmmo = 5;
+        this.score = 0;
+        this.win = false;
+        this.direction = 'right';
+        
+        // Reset player animation state
+        this.playerImage = this.playerImageIdle;
+        this.playerFrameWidth = 128;
+        this.currentPlayerFrame = 1;
+        this.frameOffset = 1;
+        this.frameCount = 5;
+        this.spriteWidth = 120;
+        this.spriteHeight = 72;
+        this.attacking = false;
+        
+        // Clear arrays
+        this.attacks = [];
+        this.bombs = [];
+        this.enemies = [];
+        this.bonuses = [];
+        
+        // Reset game loop state
+        this.gameLoopRunning = false;
+        
+        // Start new game loop
+        this.gameLoopRunning = true;
+    }
+
+    cycleBackground() {
+        this.currentBackgroundIndex = (this.currentBackgroundIndex + 1) % this.backgroundImages.length;
+        this.backgroundImage = new Image();
+        this.backgroundImage.src = this.backgroundImages[this.currentBackgroundIndex];
+    }
 
     playSoundEffect(soundFile) {
         var audio = new Audio(soundFile);
@@ -1022,41 +1101,25 @@ class Game {
     
         // ENEMIES
         if (this.enemies.length < 5) {
-            let roll = Math.random()*10
+            let roll = Math.random()*10;
             if(roll > 8) {
-                console.log(this.enemies);
-                this.enemies.push(new Enemy2(this.canvas, this.context, this))
+                this.enemies.push(new Enemy2(this.canvas, this.context, this));
             } else if (roll > 5) {
-                console.log(this.enemies);
-                this.enemies.push(new Enemy(this.canvas, this.context, this))
+                this.enemies.push(new Enemy(this.canvas, this.context, this));
             } else if (roll > 3) {
-                console.log(this.enemies);
-                this.enemies.push(new Raider(this.canvas, this.context, this))
+                this.enemies.push(new Raider(this.canvas, this.context, this));
             } else {
                 if(Math.random() >= 0.5) {
-                    console.log(this.enemies);
                     this.enemies.push(new Drone(this.canvas, this.context, this, 'left'));
                 } else {
-                    console.log(this.enemies);
                     this.enemies.push(new Drone(this.canvas, this.context, this, 'right'));
                 }
-                
             }
-
-            if (this.enemies.length === 0) {
-
-                setTimeout(() => {
-
-                    this.enemies.push(new Enemy(this.canvas, this.context, this));
-                }, 3000);
-            }
-            
-            
         }
 
     
-        // Draw enemies
-        for (let i=0; i < this.enemies.length; i++) {
+        // Draw and update enemies
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
             let enemy = this.enemies[i];
             enemy.update();
             enemy.draw();
@@ -1203,8 +1266,8 @@ class Game {
         // Check for level end
 
         if (this.score >= 200) {
-
             this.win = true;
+            this.cycleBackground(); // Cycle to next background
             this.context.fillStyle = 'lightgreen';
             this.context.font = "30px Monospace";
             this.context.fillText("Mission Success!", this.canvas.width/2 - 100, this.canvas.height/2)
@@ -1247,8 +1310,11 @@ class Game {
         }
 
         // Schedule next frame update
-        if (!this.win) {
-            requestAnimationFrame(this.update.bind(this));
+        if (!this.win && this.gameLoopRunning) {
+            this.animationFrameId = requestAnimationFrame(this.update.bind(this));
+        } else {
+            this.gameLoopRunning = false;
+            this.animationFrameId = null;
         }
         
     }
@@ -1257,4 +1323,3 @@ class Game {
 
 
 const game = new Game(ctx, canvas);
-game.update();

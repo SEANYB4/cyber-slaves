@@ -367,7 +367,8 @@ class Game {
         // Background images array
         this.backgroundImages = [
             './Levels/level_1.jpg',
-            './Levels/level_2.png'
+            './Levels/level_2.png',
+            './Levels/level_3.png'
         ];
         this.currentBackgroundIndex = 0;
         
@@ -1073,10 +1074,10 @@ class Game {
         // DRAW SHIELD
         if (this.playerShieldPower > 20) {
             if (this.playerShield) {
-                this.context.strokeStyle = "white";
+                this.context.fillStyle = "rgba(255, 255, 255, 0.3)"; // Semi-translucent white
                 this.context.beginPath();
                 this.context.arc((this.playerX + 20), (this.playerY + 30), 75, 0, (2*Math.PI));
-                this.context.stroke();
+                this.context.fill();
             } 
         } 
 
@@ -1100,7 +1101,13 @@ class Game {
         }
     
         // ENEMIES
-        if (this.enemies.length < 5) {
+        // Calculate max enemies based on level (starts at 5, increases by 2 each level)
+        const maxEnemies = 5 + (this.currentBackgroundIndex * 2);
+        
+        // Calculate spawn rate based on level (increases as level increases)
+        const spawnRate = 0.1 + (this.currentBackgroundIndex * 0.05); // Base 10% chance, increases by 5% each level
+        
+        if (this.enemies.length < maxEnemies && Math.random() < spawnRate) {
             let roll = Math.random()*10;
             if(roll > 8) {
                 this.enemies.push(new Enemy2(this.canvas, this.context, this));

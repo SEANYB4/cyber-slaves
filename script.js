@@ -140,7 +140,7 @@ class Enemy {
             
         if (this.currentFrame >= this.frameCount) {
             if (this.dead) {
-                this.game.enemies.splice(0, 1);
+                this.game.enemies.splice(this.game.enemies.indexOf(this), 1);
                 
             } else {
                 this.currentFrame = 0;
@@ -162,9 +162,9 @@ class Enemy {
             this.x += this.xVel;
         }
         
-
+        const index = this.game.enemies.indexOf(this);
         if (this.x < 0) {
-            this.game.enemies.splice(0, 1);
+            this.game.enemies.splice(index, 1);
         } else if (this.health <= 0 && this.image != this.imageDeath) {
             this.game.score += 10;
             this.dead = true;
@@ -235,11 +235,11 @@ class Drone extends Enemy{
         
 
         if (this.direction == 'left') {
-            this.x = this.canvas.width;
+            this.x = this.canvas.width - 50;
             this.xVel = -5;
         } else {
 
-            this.x = 0;
+            this.x = 50;
             this.xVel = 5;
         }
        
@@ -247,11 +247,12 @@ class Drone extends Enemy{
   
         this.y = 200;
         this.yVel = 0;
+        const index = this.game.enemies.indexOf(this);
 
         if (this.x < 0) {
-            this.game.enemies.splice(0, 1);
+            this.game.enemies.splice(index, 1);
         } else if (this.x > this.game.canvas.width) {
-            this.game.enemies.splice(0, 1);
+            this.game.enemies.splice(index, 1);
         }
 
     }
@@ -325,7 +326,7 @@ class Blast {
         }
         
         if (this.x > this.canvas.width || this.x < 0) {
-            this.game.attacks.pop();
+            this.game.attacks.splice(this.game.attacks.indexOf(this), 1);
         }
         
     }
@@ -415,6 +416,7 @@ class Game {
         this.chargeSfx = new Audio("./Sounds/charge.wav");
         this.blastSfx = new Audio("./Sounds/blast.wav");
         this.shieldSfx = new Audio("./Sounds/shield.wav");
+        this.restartSfx = new Audio("./Sounds/restart.wav");
 
 
         
@@ -736,6 +738,21 @@ class Game {
 
             console.log(event);
             // ADD EVENT LISTENER TO RELOAD PAGE WHEN USER CLICKS RESTART OR ADVANCE LEVEL
+            let rect = this.canvas.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+            
+
+
+            // RESTART BUTTON
+            // this.context.fillRect(this.canvas.width/2 - 100, this.canvas.height/2 + 50, 200, 50);
+            if(x <= this.canvas.width/2 + 100 && x >= this.canvas.width/2 - 100 && y >= this.canvas.height/2 + 100 && y <= this.canvas.height/2 + 150) {
+
+                location.reload();
+                this.playSoundEffect('./Sounds/restart.wav');
+                
+            }
+
 
         })
 
@@ -996,9 +1013,6 @@ class Game {
             }
         }
         
-
-
-        
         // DRAW ATTACKS
         for (let i=0; i < this.attacks.length; i++) {
             let attack = this.attacks[i];
@@ -1006,10 +1020,8 @@ class Game {
             attack.draw();
         }
     
-
-
         // ENEMIES
-        if (this.enemies.length <= 2) {
+        if (this.enemies.length < 5) {
             let roll = Math.random()*10
             if(roll > 8) {
                 console.log(this.enemies);
@@ -1029,6 +1041,14 @@ class Game {
                     this.enemies.push(new Drone(this.canvas, this.context, this, 'right'));
                 }
                 
+            }
+
+            if (this.enemies.length === 0) {
+
+                setTimeout(() => {
+
+                    this.enemies.push(new Enemy(this.canvas, this.context, this));
+                }, 3000);
             }
             
             
